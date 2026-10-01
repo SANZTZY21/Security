@@ -23,6 +23,11 @@ export const adminSections: Record<
     label: "Sumber pemutaran",
     permission: "catalog",
   },
+  subtitles: {
+    table: "episode_subtitles",
+    label: "Subtitle episode",
+    permission: "catalog",
+  },
   comments: { table: "comments", label: "Komentar", permission: "moderate" },
   reports: { table: "reports", label: "Laporan", permission: "moderate" },
   badges: {
@@ -134,6 +139,25 @@ export const adminSchemas: Record<string, z.ZodType> = {
     type: z.enum(["video/mp4", "video/webm"]),
     height: z.number().int().min(144).max(4320).nullable().default(null),
     premium_only: z.boolean(),
+    enabled: z.boolean(),
+  }),
+  subtitles: z.object({
+    id: z.uuid(),
+    episode_id: z.uuid(),
+    language: z
+      .string()
+      .regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/)
+      .max(35),
+    label: z.string().trim().min(1).max(60),
+    url: z
+      .string()
+      .max(2000)
+      .refine(
+        (value) =>
+          /^\/media\/[a-zA-Z0-9/_-]+\.vtt$/.test(value) ||
+          (URL.canParse(value) && new URL(value).protocol === "https:"),
+      ),
+    license: z.string().trim().min(5).max(1000),
     enabled: z.boolean(),
   }),
   badges: z.object({

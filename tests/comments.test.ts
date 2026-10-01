@@ -47,3 +47,29 @@ it("validates rendition resolution without inventing an unknown resolution", () 
     adminSchemas.playback.safeParse({ ...source, height: -1 }).success,
   ).toBe(false);
 });
+
+it("validates subtitle language and secure source URLs", () => {
+  const track = {
+    id: "00000000-0000-4000-8000-000000000001",
+    episode_id: "00000000-0000-4000-8000-000000000001",
+    language: "id",
+    label: "Indonesia",
+    url: "/media/zeta-orbit-id.vtt",
+    license: "CC0 original",
+    enabled: true,
+  };
+  expect(adminSchemas.subtitles.safeParse(track).success).toBe(true);
+  for (const url of [
+    "javascript:alert(1)",
+    "http://example.test/a.vtt",
+    "//evil.test/a.vtt",
+    "/media/../../a.vtt",
+  ])
+    expect(adminSchemas.subtitles.safeParse({ ...track, url }).success).toBe(
+      false,
+    );
+  expect(
+    adminSchemas.subtitles.safeParse({ ...track, language: "<script>" })
+      .success,
+  ).toBe(false);
+});

@@ -8,3 +8,5 @@ insert into application_settings values ('ads','{"frequency":2}'),('gamification
 insert into catalog_titles(id,title,description,year,genres,published,license) values ('zeta-orbit','Zeta Orbit — Film Uji','Animasi abstrak orisinal ZetaHub. Video uji berizin untuk memverifikasi pemutaran; bukan episode anime.',2026,array['Original','Animation'],true,'ZetaHub original, CC0 1.0');
 insert into episodes(id,title_id,number,title,duration,published) values ('00000000-0000-4000-8000-000000000001','zeta-orbit',1,'Orbit: First Light',24,true),('00000000-0000-4000-8000-000000000002','zeta-orbit',2,'Orbit: Emerald Horizon',24,true);
 insert into playback_sources(episode_id,url,license,type) values ('00000000-0000-4000-8000-000000000001','/media/zeta-orbit.webm','ZetaHub original, CC0 1.0','video/webm'),('00000000-0000-4000-8000-000000000002','/media/zeta-orbit.webm','ZetaHub original, CC0 1.0','video/webm');
+-- Original development captions for the original Zeta Orbit fixture only.
+insert into episode_subtitles(episode_id,language,label,url,license) values ('00000000-0000-4000-8000-000000000001','id','Indonesia','/media/zeta-orbit-id.vtt','ZetaHub original, CC0 1.0');

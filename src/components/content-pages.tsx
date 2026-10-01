@@ -74,11 +74,14 @@ export async function TitlePage({
   const { data: episodes } = s
     ? await s
         .from("episodes")
-        .select("id,number,title,duration")
+        .select("id,number,title,duration,playback_sources(id)")
         .eq("title_id", slug)
         .eq("published", true)
         .order("number")
     : { data: [] };
+  const firstPlayable = episodes?.find(
+    (episode) => episode.playback_sources?.length,
+  );
   const { data: saved } =
     user && s
       ? await s
@@ -129,8 +132,8 @@ export async function TitlePage({
             ))}
           </div>
           <div className="actions-row">
-            {episodes?.length ? (
-              <Link href={`/watch/${episodes[0].id}`} className="button lime">
+            {firstPlayable ? (
+              <Link href={`/watch/${firstPlayable.id}`} className="button lime">
                 <Play size={17} /> Tonton Sekarang
               </Link>
             ) : (
@@ -168,8 +171,10 @@ export async function TitlePage({
                   <span>
                     <b>{e.title}</b>
                     <small>
-                      {Math.ceil(e.duration / 60)} menit · Periksa ketersediaan
-                      pemutaran
+                      {Math.ceil(e.duration / 60)} menit ·{" "}
+                      {e.playback_sources?.length
+                        ? "Putar di ZetaHub"
+                        : "Video belum tersedia"}
                     </small>
                   </span>
                   <Play size={20} />
@@ -183,32 +188,9 @@ export async function TitlePage({
                 {item.episodes
                   ? `${item.episodes} episode tercatat di penyedia metadata. `
                   : ""}
-                Episode lengkap belum tersedia untuk diputar di ZetaHub. Simpan
-                judul ini atau buka penyedia yang tercantum di bawah.
+                Episode belum terhubung ke sumber video di ZetaHub.
               </p>
             </div>
-          )}
-          {!!item.streamingLinks?.length && (
-            <section className="panel">
-              <h3>Tonton melalui penyedia</h3>
-              <p className="muted">
-                Tautan dari AniList. Ketersediaan wilayah dan langganan
-                mengikuti ketentuan masing-masing penyedia.
-              </p>
-              <div className="filter-row">
-                {item.streamingLinks.map((provider) => (
-                  <a
-                    key={provider.url}
-                    href={provider.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="button outline"
-                  >
-                    Buka {provider.site} <ArrowRight size={15} />
-                  </a>
-                ))}
-              </div>
-            </section>
           )}
           {item.url && (
             <a
@@ -438,6 +420,12 @@ export async function WatchPage({ id }: { id: string }) {
     .eq("enabled", true)
     .order("height", { ascending: false, nullsFirst: false });
   const source = sources?.[0];
+  const { data: subtitles, error: subtitleError } = await s
+    .from("episode_subtitles")
+    .select("id,url,language,label")
+    .eq("episode_id", id)
+    .eq("enabled", true)
+    .order("language");
   const { data: progress } = user
     ? await s
         .from("watch_progress")
@@ -465,6 +453,7 @@ export async function WatchPage({ id }: { id: string }) {
           key={id}
           episodeId={id}
           sources={sources || []}
+          subtitles={subtitles || []}
           resume={progress?.position || 0}
           authenticated={!!user}
         />
@@ -474,6 +463,9 @@ export async function WatchPage({ id }: { id: string }) {
           message="Masuk atau periksa status sumber berizin untuk episode ini."
           href="/login"
         />
+      )}
+      {subtitleError && (
+        <p className="notice">Daftar subtitle belum dapat dimuat.</p>
       )}
       <div className="actions-row">
         {others

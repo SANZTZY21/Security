@@ -4,15 +4,30 @@ import { Maximize, RotateCcw } from "lucide-react";
 export function VideoPlayer({
   episodeId,
   sources,
+  subtitles = [],
   resume = 0,
   authenticated,
 }: {
   episodeId: string;
   sources: { id: string; url: string; height: number | null }[];
+  subtitles?: { id: string; url: string; language: string; label: string }[];
   resume?: number;
   authenticated: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [subtitle, setSubtitle] = useState(
+    subtitles.find((track) => track.language === "id")?.id || "off",
+  );
+  const [subtitleError, setSubtitleError] = useState(false);
+  function selectSubtitle(id: string) {
+    setSubtitle(id);
+    const video = ref.current;
+    if (!video) return;
+    for (let i = 0; i < video.textTracks.length; i++) {
+      video.textTracks[i].mode =
+        subtitles[i]?.id === id ? "showing" : "disabled";
+    }
+  }
   const [selected, setSelected] = useState(sources[0]?.id);
   const source = sources.find((item) => item.id === selected) || sources[0];
   const restore = useRef({ position: resume, rate: 1, playing: false });
@@ -99,6 +114,7 @@ export function VideoPlayer({
         controls
         playsInline
         preload="metadata"
+        crossOrigin={subtitles.length ? "anonymous" : undefined}
         src={source?.url}
         onLoadedMetadata={() => {
           const video = ref.current;
@@ -108,6 +124,7 @@ export function VideoPlayer({
             video.duration,
           );
           video.playbackRate = restore.current.rate;
+          selectSubtitle(subtitle);
           switching.current = false;
           if (restore.current.playing)
             void video
@@ -120,7 +137,19 @@ export function VideoPlayer({
         onPause={() => void ping(true)}
         onError={() => setError(true)}
         aria-label="Pemutar video berizin"
-      />
+      >
+        {subtitles.map((track) => (
+          <track
+            key={track.id}
+            kind="subtitles"
+            src={track.url}
+            srcLang={track.language}
+            label={track.label}
+            default={track.id === subtitle}
+            onError={() => setSubtitleError(true)}
+          />
+        ))}
+      </video>
       <div className="player-toolbar">
         <span className="green">● SUMBER BERIZIN</span>
         <label>
@@ -136,6 +165,24 @@ export function VideoPlayer({
                 {sources.filter((s) => s.height === item.height).length > 1
                   ? ` · sumber ${index + 1}`
                   : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Subtitle{" "}
+          <select
+            aria-label="Subtitle"
+            value={subtitle}
+            onChange={(event) => selectSubtitle(event.target.value)}
+            disabled={!subtitles.length}
+          >
+            <option value="off">
+              {subtitles.length ? "Nonaktif" : "Belum tersedia"}
+            </option>
+            {subtitles.map((track) => (
+              <option key={track.id} value={track.id}>
+                {track.label}
               </option>
             ))}
           </select>
@@ -165,6 +212,12 @@ export function VideoPlayer({
           <Maximize size={18} />
         </button>
       </div>
+      {subtitleError && (
+        <p className="notice" role="alert">
+          Subtitle gagal dimuat. Coba bahasa lain atau muat ulang halaman; video
+          dapat tetap diputar.
+        </p>
+      )}
       {ad && (
         <section className="panel sponsor-panel" aria-label="Iklan sponsor">
           <span className="eyebrow">SPONSOR ZETAHUB</span>
