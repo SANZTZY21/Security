@@ -11,7 +11,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { titleDetail } from "@/lib/catalog";
-import { db, currentUser, configured } from "@/lib/supabase/server";
+import {
+  db,
+  currentUser,
+  configured,
+  accountStoreReady,
+} from "@/lib/supabase/server";
 import {
   toggleWatchlist,
   followTitle,
@@ -104,7 +109,7 @@ export async function TitlePage({
         <div>
           <span className="eyebrow">
             {item.provider === "local"
-              ? "ZETA ORIGINAL · VIDEO UJI CC0"
+              ? "KATALOG ZETAHUB · SUMBER BERIZIN"
               : `METADATA ${item.provider?.toUpperCase()}`}
           </span>
           <h1>{item.title}</h1>
@@ -218,19 +223,37 @@ export async function TitlePage({
         </section>
         <section>
           <h2>Diskusi judul</h2>
-          <CommentForm target={slug} />
-          <Link className="text-link" href={`/community?target=${slug}`}>
-            Lihat diskusi judul ini →
-          </Link>
+          <CommunityPage target={slug} inline returnTo={`/title/${slug}`} />
         </section>
       </div>
     </>
   );
 }
-export function CommentForm({ target = "community" }: { target?: string }) {
+export async function CommentForm({
+  target = "community",
+  returnTo = "/community",
+}: {
+  target?: string;
+  returnTo?: string;
+}) {
+  if (!(await accountStoreReady()))
+    return (
+      <p className="notice" role="status">
+        Komentar belum tersedia: database akun belum siap.
+      </p>
+    );
+  if (!(await currentUser()))
+    return (
+      <p className="notice">
+        <Link href="/login" className="text-link">
+          Masuk untuk mengirim komentar
+        </Link>
+      </p>
+    );
   return (
     <form action={addComment} className="form-stack">
       <input type="hidden" name="target" value={target} />
+      <input type="hidden" name="returnTo" value={returnTo} />
       <label>
         Bagikan pendapatmu
         <textarea
@@ -253,9 +276,15 @@ export function CommentForm({ target = "community" }: { target?: string }) {
 }
 export async function CommunityPage({
   target = "community",
+  inline = false,
+  returnTo,
 }: {
   target?: string;
+  inline?: boolean;
+  returnTo?: string;
 }) {
+  const destination =
+    returnTo || `/community?target=${encodeURIComponent(target)}`;
   const s = configured() ? await db() : null;
   const user = await currentUser();
   const parentId = target.startsWith("comment:") ? target.slice(8) : null;
@@ -270,7 +299,7 @@ export async function CommunityPage({
             .maybeSingle()
         ).data
       : null;
-  const { data } = s
+  const { data, error } = s
     ? await s
         .from("comments")
         .select("id,user_id,body,spoiler,created_at,comment_likes(count)")
@@ -278,16 +307,18 @@ export async function CommunityPage({
         .eq("removed", false)
         .order("created_at", { ascending: false })
         .limit(30)
-    : { data: null };
+    : { data: null, error: { message: "unconfigured" } };
   return (
     <>
-      <div className="page-heading">
-        <span className="eyebrow">TEMUKAN TEMAN SATU FREKUENSI</span>
-        <h1>
-          Ruang Komunitas<span className="green">.</span>
-        </h1>
-        <p>Cerita, teori, dan rekomendasi. Semua lebih seru bersama.</p>
-      </div>
+      {!inline && (
+        <div className="page-heading">
+          <span className="eyebrow">TEMUKAN TEMAN SATU FREKUENSI</span>
+          <h1>
+            Ruang Komunitas<span className="green">.</span>
+          </h1>
+          <p>Cerita, teori, dan rekomendasi. Semua lebih seru bersama.</p>
+        </div>
+      )}
       {parent && (
         <div className="panel">
           <h2>Diskusi</h2>
@@ -301,12 +332,17 @@ export async function CommunityPage({
           )}
         </div>
       )}
-      <div className="community-layout">
+      <div className={inline ? "" : "community-layout"}>
         <div>
           <div className="panel">
-            <CommentForm target={target} />
+            <CommentForm target={target} returnTo={destination} />
           </div>
-          {data?.length ? (
+          {error ? (
+            <p className="notice" role="alert">
+              La­yanan komentar belum tersedia. Coba kembali setelah koneksi
+              database pulih.
+            </p>
+          ) : data?.length ? (
             data.map((c) => (
               <article className="comment panel" key={c.id}>
                 <div className="comment-header">
@@ -333,6 +369,7 @@ export async function CommunityPage({
                 <div className="actions-row">
                   <form action={likeComment}>
                     <input type="hidden" name="id" value={c.id} />
+                    <input type="hidden" name="returnTo" value={destination} />
                     <button className="text-link">
                       <Heart size={15} />
                       {c.comment_likes?.[0]?.count || 0} Suka
@@ -347,6 +384,11 @@ export async function CommunityPage({
                   {user?.id === c.user_id && (
                     <form action={deleteComment}>
                       <input type="hidden" name="id" value={c.id} />
+                      <input
+                        type="hidden"
+                        name="returnTo"
+                        value={destination}
+                      />
                       <button className="text-link">
                         <Trash2 size={14} /> Hapus
                       </button>
@@ -363,16 +405,18 @@ export async function CommunityPage({
             />
           )}
         </div>
-        <aside className="panel">
-          <h3>Rumah untuk semua penggemar.</h3>
-          <p className="muted">
-            Hormati perbedaan pendapat, tandai spoiler, dan jangan bagikan
-            tautan konten tanpa izin.
-          </p>
-          <Link href="/terms" className="text-link">
-            Panduan komunitas →
-          </Link>
-        </aside>
+        {!inline && (
+          <aside className="panel">
+            <h3>Rumah untuk semua penggemar.</h3>
+            <p className="muted">
+              Hormati perbedaan pendapat, tandai spoiler, dan jangan bagikan
+              tautan konten tanpa izin.
+            </p>
+            <Link href="/terms" className="text-link">
+              Panduan komunitas →
+            </Link>
+          </aside>
+        )}
       </div>
     </>
   );
@@ -387,13 +431,13 @@ export async function WatchPage({ id }: { id: string }) {
     .maybeSingle();
   if (!e) notFound();
   const user = await currentUser();
-  const { data: source } = await s
+  const { data: sources } = await s
     .from("playback_sources")
-    .select("url,license")
+    .select("id,url,license,height")
     .eq("episode_id", id)
     .eq("enabled", true)
-    .limit(1)
-    .maybeSingle();
+    .order("height", { ascending: false, nullsFirst: false });
+  const source = sources?.[0];
   const { data: progress } = user
     ? await s
         .from("watch_progress")
@@ -418,8 +462,9 @@ export async function WatchPage({ id }: { id: string }) {
       </p>
       {source ? (
         <VideoPlayer
+          key={id}
           episodeId={id}
-          url={source.url}
+          sources={sources || []}
           resume={progress?.position || 0}
           authenticated={!!user}
         />
@@ -446,7 +491,7 @@ export async function WatchPage({ id }: { id: string }) {
       </div>
       <section className="panel">
         <h2>Diskusi episode</h2>
-        <CommentForm target={id} />
+        <CommunityPage target={id} inline returnTo={`/watch/${id}`} />
       </section>
     </>
   );

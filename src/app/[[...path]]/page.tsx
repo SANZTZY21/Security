@@ -1,3 +1,4 @@
+import { WatchablePage, OpenCinemaPage } from "@/components/watchable";
 import { notFound, redirect } from "next/navigation";
 import { Home } from "@/components/home";
 import { SearchCatalog } from "@/components/search";
@@ -73,6 +74,14 @@ export default async function Page({
         season={path[2] === "season" ? path[3] : undefined}
       />
     );
+  else if (root === "watch-now" && path.length === 1)
+    content = (
+      <WatchablePage
+        page={Math.min(100, Math.max(1, Math.floor(Number(search.page) || 1)))}
+      />
+    );
+  else if (root === "open-cinema" && path.length === 1)
+    content = <OpenCinemaPage />;
   else if (root === "watch" && path[1]) content = <WatchPage id={path[1]} />;
   else if (root === "community")
     content = (

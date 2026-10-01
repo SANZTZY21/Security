@@ -40,3 +40,13 @@ Copy `.env.example`. Only consumed variables are included. Unimplemented Xendit,
 The supplied 135-provider directory is research input, not a list of integrations claimed by this application. Price and license assertions in that directory are not copied as verified facts.
 
 CodeRabbit emulate v0.0.1 catalog was installed and inspected. It has no AniList, TMDB, Midtrans or Xendit service. Local Supabase is the actual stack, not a mock; unsupported providers have not been redirected to unrelated emulators.
+
+## Direct playback and quality (2026-10-01)
+
+- `/watch-now` lists available sources under database RLS plus an explicitly editorial open film. It does not mark AniList/TMDB metadata as playable.
+- `/open-cinema` plays **Big Buck Bunny, Sunflower edition**, full duration 634.571 seconds, including credits. Credit: © Blender Foundation | www.blender.org. CC BY 3.0, project license: https://peach.blender.org/about/. Wikimedia Commons hosts WebM VP9 renditions at 360p and nominal 480p (854×481 encoded pixels). These are real full-film sources, not trailers. No playback or availability SLA is implied by a third-party public host; network/rate limits can interrupt delivery. For production scale, host permitted copies on your own media CDN with the attribution and full credits retained.
+- `supabase/open-cinema.sql` optionally imports the same film and two sources, enabling authenticated progress/XP. Without this import or a working database, the public screening remains available; progress and comments do not pretend to persist.
+- Migration `202610010011_playback_quality.sql` adds nullable `playback_sources.height`. Admin playback JSON accepts `height` (144–4320), or null for an unmeasured original. Every rendition must contain the same entire episode with aligned timing. The player preserves current time, playback speed and pause state when switching sources. Choices come only from authorized source records visible through RLS.
+- MP4/H.264 support depends on the browser's codecs. The sandbox Chromium does not support H.264; the open film therefore uses WebM, tested by actual decoded frames. DRM, arbitrary embeds and automatic transcoding are not implemented.
+- Comments now render inline on titles, episodes and the open screening. Add/like/delete actions return to a validated discussion URL. Database failures display a service unavailable message; logged-out visitors see a login link.
+- Hosted migration/admin provisioning remains blocked until Supabase MCP authenticates successfully. The scoped endpoint returned HTTP401 `JWT could not be decoded`; authenticate the connection with Supabase OAuth or an appropriate management Personal Access Token, not an application anon/service-role key. Do not put secrets in chat.

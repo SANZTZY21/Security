@@ -56,6 +56,7 @@ export async function Header() {
           <Link href="/explore">
             {copy.explore} <ChevronDown size={13} />
           </Link>
+          <Link href="/watch-now">Siap Ditonton</Link>
           <Link href="/community">{copy.community}</Link>
         </nav>
         <form action="/search" className="header-search">

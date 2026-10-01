@@ -58,3 +58,8 @@ For owner lockout use the Supabase operator account to verify identity and resto
 ## Release gates still required
 
 Live TMDB, SMTP verification/recovery, payment sandbox callbacks, licensed media delivery, retention/legal policy review, independent security review, load tests and cross-browser playback tests. See DELIVERY.md for product scope that remains to be built.
+
+### Playback update
+Apply migration 11 after existing migrations, then optionally run `supabase/open-cinema.sql` for persisted open-film progress. The public `/open-cinema` page does not require a database to play the film. Add only licensed MP4/WebM sources in the playback admin editor; each quality variant needs its own row, the same episode ID, and a measured `height`. Use an owned media CDN at scale. Never use metadata posters or trailers as evidence of episode availability.
+
+Local browser regression: with disposable local Supabase and registered Preview running, execute `node scripts/player-comments.browser.mjs`. It creates and deletes its own synthetic account, exercises actual video decoding and resolution changes, comment persistence and mobile overflow. Do not run it against production accounts.

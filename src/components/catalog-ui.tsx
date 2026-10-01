@@ -54,11 +54,13 @@ export function Poster({
           </span>
         )}
         <span className="poster-type">
-          {item.country === "CN"
-            ? "DONGHUA"
-            : item.provider === "tmdb"
-              ? "FILM & TV"
-              : "ANIME"}
+          {item.provider === "local"
+            ? "VIDEO BERIZIN"
+            : item.country === "CN"
+              ? "DONGHUA"
+              : item.provider === "tmdb"
+                ? "FILM & TV"
+                : "ANIME"}
         </span>
         <span className="poster-hover">
           <ArrowUpRight size={24} />

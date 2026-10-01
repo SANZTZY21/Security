@@ -3,16 +3,32 @@ import { useRef, useState } from "react";
 import { Maximize, RotateCcw } from "lucide-react";
 export function VideoPlayer({
   episodeId,
-  url,
+  sources,
   resume = 0,
   authenticated,
 }: {
   episodeId: string;
-  url: string;
+  sources: { id: string; url: string; height: number | null }[];
   resume?: number;
   authenticated: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [selected, setSelected] = useState(sources[0]?.id);
+  const source = sources.find((item) => item.id === selected) || sources[0];
+  const restore = useRef({ position: resume, rate: 1, playing: false });
+  const switching = useRef(false);
+  function changeSource(id: string) {
+    const video = ref.current;
+    if (!video) return;
+    restore.current = {
+      position: video.currentTime,
+      rate: video.playbackRate,
+      playing: !video.paused,
+    };
+    switching.current = true;
+    setError(false);
+    setSelected(id);
+  }
   const session = useRef<string | null>(null);
   const pending = useRef(false);
   const last = useRef(0);
@@ -28,6 +44,7 @@ export function VideoPlayer({
   async function ping(force = false) {
     const video = ref.current;
     if (
+      switching.current ||
       !authenticated ||
       !video ||
       (!force && video.paused) ||
@@ -82,10 +99,20 @@ export function VideoPlayer({
         controls
         playsInline
         preload="metadata"
-        src={url}
+        src={source?.url}
         onLoadedMetadata={() => {
-          if (ref.current && resume > 0)
-            ref.current.currentTime = Math.min(resume, ref.current.duration);
+          const video = ref.current;
+          if (!video) return;
+          video.currentTime = Math.min(
+            restore.current.position,
+            video.duration,
+          );
+          video.playbackRate = restore.current.rate;
+          switching.current = false;
+          if (restore.current.playing)
+            void video
+              .play()
+              .catch(() => setMessage("Tekan putar untuk melanjutkan."));
         }}
         onPlay={() => void ping()}
         onTimeUpdate={() => void ping()}
@@ -96,6 +123,23 @@ export function VideoPlayer({
       />
       <div className="player-toolbar">
         <span className="green">● SUMBER BERIZIN</span>
+        <label>
+          Resolusi{" "}
+          <select
+            aria-label="Resolusi video"
+            value={source?.id}
+            onChange={(event) => changeSource(event.target.value)}
+          >
+            {sources.map((item, index) => (
+              <option key={item.id} value={item.id}>
+                {item.height ? `${item.height}p` : "Asli"}
+                {sources.filter((s) => s.height === item.height).length > 1
+                  ? ` · sumber ${index + 1}`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           Kecepatan{" "}
           <select
@@ -182,8 +226,16 @@ export function VideoPlayer({
           <button
             className="button outline"
             onClick={() => {
-              setError(false);
-              ref.current?.load();
+              if (ref.current) {
+                restore.current = {
+                  position: ref.current.currentTime || restore.current.position,
+                  rate: ref.current.playbackRate,
+                  playing: true,
+                };
+                switching.current = true;
+                setError(false);
+                ref.current.load();
+              }
             }}
           >
             <RotateCcw size={15} /> Coba lagi

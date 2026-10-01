@@ -85,8 +85,8 @@ export async function Home() {
             <b>Nonton. Explore. Level Up.</b>
             <span>Cerita favoritmu berikutnya dimulai di sini.</span>
           </div>
-          <Link href="/explore">
-            Temukan sekarang <ArrowRight size={14} />
+          <Link href="/watch-now">
+            Putar film berizin <ArrowRight size={14} />
           </Link>
         </div>
         <HomeSection sections={sections} id="trending">

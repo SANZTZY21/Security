@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, currentUser, accountStoreReady } from "@/lib/supabase/server";
+import { commentReturnPath } from "@/lib/comments";
 import { profileInput, commentInput } from "@/lib/domain";
 import { z } from "zod";
 import { appOrigin, authErrorMessage } from "@/lib/auth-config";
@@ -112,7 +113,7 @@ export async function toggleWatchlist(f: FormData) {
   const { s, user } = await context();
   const id = z
     .string()
-    .regex(/^(anilist-\d+|tmdb-(movie|tv)-\d+|zeta-orbit)$/)
+    .regex(/^[a-z0-9-]{1,100}$/)
     .parse(value(f, "id"));
   const { data } = await s
     .from("watchlist_items")
@@ -129,7 +130,17 @@ export async function toggleWatchlist(f: FormData) {
       .eq("title_id", id));
   } else {
     const { titleDetail } = await import("@/lib/catalog");
-    const title = await titleDetail(id);
+    const title =
+      (await titleDetail(id)) ||
+      (
+        await s
+          .from("catalog_titles")
+          .select("title,poster")
+          .eq("id", id)
+          .eq("published", true)
+          .maybeSingle()
+      ).data;
+    if (!title) finish(`/title/${id}`, "Judul tidak tersedia.");
     ({ error } = await s.from("watchlist_items").insert({
       user_id: user.id,
       title_id: id,
@@ -165,13 +176,16 @@ export async function addComment(f: FormData) {
     spoiler: f.get("spoiler") === "on",
   });
   if (!p.success)
-    finish("/community", "Komentar harus berisi 2–2.000 karakter.");
+    finish(
+      commentReturnPath(value(f, "returnTo")),
+      "Komentar harus berisi 2–2.000 karakter.",
+    );
   const { error } = await s.rpc("add_comment", {
     p_target: p.data.target,
     p_body: p.data.body,
     p_spoiler: p.data.spoiler,
   });
-  finish("/community", error?.message);
+  finish(commentReturnPath(value(f, "returnTo")), error?.message);
 }
 export async function deleteComment(f: FormData) {
   const { s } = await context();
@@ -179,7 +193,7 @@ export async function deleteComment(f: FormData) {
     .from("comments")
     .delete()
     .eq("id", z.uuid().parse(value(f, "id")));
-  finish("/community", error?.message);
+  finish(commentReturnPath(value(f, "returnTo")), error?.message);
 }
 export async function likeComment(f: FormData) {
   const { s, user } = await context();
@@ -199,7 +213,7 @@ export async function likeComment(f: FormData) {
     : await s
         .from("comment_likes")
         .insert({ user_id: user.id, comment_id: id });
-  finish("/community", error?.message);
+  finish(commentReturnPath(value(f, "returnTo")), error?.message);
 }
 export async function markNotifications() {
   const { s, user } = await context();

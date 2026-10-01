@@ -132,6 +132,7 @@ export const adminSchemas: Record<string, z.ZodType> = {
     url: z.url().startsWith("https://"),
     license: z.string().min(5).max(1000),
     type: z.enum(["video/mp4", "video/webm"]),
+    height: z.number().int().min(144).max(4320).nullable().default(null),
     premium_only: z.boolean(),
     enabled: z.boolean(),
   }),
