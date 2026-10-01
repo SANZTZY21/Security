@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import type { CatalogTitle } from "./domain";
+import { streamingLinks, type CatalogTitle } from "./domain";
 const aniMedia = z.object({
   id: z.number(),
   title: z.object({
@@ -17,6 +17,16 @@ const aniMedia = z.object({
   status: z.string().nullable(),
   episodes: z.number().nullable(),
   siteUrl: z.string(),
+  externalLinks: z
+    .array(
+      z.object({
+        site: z.string(),
+        url: z.string(),
+        type: z.string(),
+        isDisabled: z.boolean().nullable(),
+      }),
+    )
+    .optional(),
 });
 const fields =
   "id title{romaji english} description(asHtml:false) coverImage{extraLarge} bannerImage averageScore genres startDate{year} countryOfOrigin status episodes siteUrl";
@@ -41,6 +51,7 @@ function normalize(a: z.infer<typeof aniMedia>): CatalogTitle {
     episodes: a.episodes,
     url: a.siteUrl,
     playable: false,
+    streamingLinks: streamingLinks(a.externalLinks || []),
   };
 }
 async function fetchProvider(url: string, init: RequestInit = {}) {
@@ -231,7 +242,7 @@ export async function titleDetail(slug: string): Promise<CatalogTitle | null> {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              query: `query($id:Int){Media(id:$id,type:ANIME,isAdult:false){${fields}}}`,
+              query: `query($id:Int){Media(id:$id,type:ANIME,isAdult:false){${fields} externalLinks{site url type isDisabled}}}`,
               variables: { id: Number(slug.split("-")[1]) },
             }),
           },

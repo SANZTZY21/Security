@@ -7,21 +7,27 @@ export function SearchCatalog({
   initialQuery = "",
   initialCategory = "anime",
   initialItems = [],
+  initialGenre = "",
+  initialResult,
 }: {
   initialQuery?: string;
   initialCategory?: string;
   initialItems?: CatalogTitle[];
+  initialGenre?: string;
+  initialResult?: { items: CatalogTitle[]; hasNext: boolean; total: number };
 }) {
   const [q, setQ] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory);
-  const [genre, setGenre] = useState("");
+  const [genre, setGenre] = useState(initialGenre);
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("TRENDING_DESC");
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState(initialItems);
-  const [hasNext, setHasNext] = useState(false);
-  const [total, setTotal] = useState<number | null>(null);
-  const [busy, setBusy] = useState(true);
+  const [items, setItems] = useState(initialResult?.items || initialItems);
+  const [hasNext, setHasNext] = useState(initialResult?.hasNext || false);
+  const [total, setTotal] = useState<number | null>(
+    initialResult?.total ?? null,
+  );
+  const [busy, setBusy] = useState(!initialResult);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -30,6 +36,21 @@ export function SearchCatalog({
       setBusy(true);
       setError("");
       try {
+        if (
+          initialResult &&
+          q === initialQuery &&
+          category === initialCategory &&
+          genre === initialGenre &&
+          !year &&
+          sort === "TRENDING_DESC" &&
+          page === 1 &&
+          retry === 0
+        ) {
+          setItems(initialResult.items);
+          setHasNext(initialResult.hasNext);
+          setTotal(initialResult.total);
+          return;
+        }
         const res = await fetch(
           `/api/catalog?${new URLSearchParams({ q, category, page: String(page), ...(["anime", "donghua"].includes(category) ? { sort, ...(genre ? { genre } : {}), ...(year ? { year } : {}) } : {}) })}`,
           { signal: c.signal },
@@ -50,7 +71,19 @@ export function SearchCatalog({
       clearTimeout(timer);
       c.abort();
     };
-  }, [q, category, page, retry, genre, year, sort]);
+  }, [
+    q,
+    category,
+    page,
+    retry,
+    genre,
+    year,
+    sort,
+    initialResult,
+    initialQuery,
+    initialCategory,
+    initialGenre,
+  ]);
   return (
     <>
       <div className="search-controls">

@@ -18,11 +18,13 @@ import {
   markNotifications,
   clearHistory,
   savePreferences,
+  resendVerification,
 } from "@/app/actions";
+import { googleAvailable } from "@/lib/auth-providers";
 import { levelForXp } from "@/lib/domain";
 import { EmptyState } from "./catalog-ui";
 import { Checkout } from "./small-controls";
-export function AuthPage({ mode }: { mode: string }) {
+export async function AuthPage({ mode }: { mode: string }) {
   const register = mode === "register";
   const forgot = mode === "forgot-password";
   const reset = mode === "reset-password";
@@ -32,9 +34,21 @@ export function AuthPage({ mode }: { mode: string }) {
         <ShieldCheck className="green" size={38} />
         <h1>Periksa email kamu.</h1>
         <p>
-          Jika verifikasi email diaktifkan, buka tautan konfirmasi yang dikirim
-          Supabase. Pada lingkungan lokal, email tersedia di Mailpit.
+          Buka tautan konfirmasi di browser yang kamu gunakan untuk mendaftar.
+          Periksa juga folder spam. Jika tautan lama tidak berfungsi, minta
+          tautan baru di bawah.
         </p>
+        {configured() && (
+          <form action={resendVerification} className="form-stack">
+            <label>
+              Email
+              <input type="email" name="email" autoComplete="email" required />
+            </label>
+            <button className="button outline full">
+              Kirim ulang verifikasi
+            </button>
+          </form>
+        )}
         <Link href="/login" className="button lime">
           Lanjut ke masuk
         </Link>
@@ -74,6 +88,15 @@ export function AuthPage({ mode }: { mode: string }) {
               ? "Kami akan mengirim tautan pemulihan jika akun tersedia."
               : "Semua hiburanmu menunggu di sini."}
         </p>
+        {(register || mode === "login") && (await googleAvailable()) && (
+          <Link
+            href="/auth/google"
+            prefetch={false}
+            className="button outline full"
+          >
+            Lanjutkan dengan Google
+          </Link>
+        )}
         {configured() ? (
           <form
             className="form-stack"

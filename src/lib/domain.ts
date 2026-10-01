@@ -17,7 +17,9 @@ export function isEntitled(expires: string | null, now = Date.now()) {
   return !!expires && Date.parse(expires) > now;
 }
 export function safeRedirect(path: string | null) {
-  return path?.startsWith("/") && !path.startsWith("//") && !path.includes("\\")
+  return path?.startsWith("/") &&
+    !path.startsWith("//") &&
+    !/[\s\u0000-\u001f\u007f\\]/.test(path)
     ? path
     : "/";
 }
@@ -62,4 +64,26 @@ export type CatalogTitle = {
   episodes: number | null;
   url: string;
   playable: boolean;
+  streamingLinks?: { site: string; url: string }[];
 };
+
+export function streamingLinks(
+  links: {
+    site: string;
+    url: string;
+    type: string;
+    isDisabled?: boolean | null;
+  }[],
+) {
+  return links
+    .filter((link) => {
+      if (link.type !== "STREAMING" || link.isDisabled) return false;
+      try {
+        const u = new URL(link.url);
+        return u.protocol === "https:" && !u.username && !u.password;
+      } catch {
+        return false;
+      }
+    })
+    .map(({ site, url }) => ({ site, url }));
+}

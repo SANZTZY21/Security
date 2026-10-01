@@ -81,6 +81,7 @@ export function Poster({
           </>
         )}
       </p>
+      <small className="muted">Lihat detail & ketersediaan</small>
     </Link>
   );
 }

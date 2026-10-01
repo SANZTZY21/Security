@@ -14,10 +14,10 @@ import {
 } from "@/components/content-pages";
 import { InfoPage, Leaderboard, PublicProfile } from "@/components/info-pages";
 import { AdminPage } from "@/components/admin-pages";
-import { GenreTiles, Poster } from "@/components/catalog-ui";
+import { GenreTiles } from "@/components/catalog-ui";
 import { currentUser } from "@/lib/supabase/server";
 import { categories } from "@/lib/domain";
-import { animeCatalog } from "@/lib/catalog";
+import { animeCatalog, movieCatalog } from "@/lib/catalog";
 export const dynamic = "force-dynamic";
 const privatePages = new Set([
   "settings",
@@ -110,47 +110,40 @@ export default async function Page({
     ["explore", "search", ...categories.map((c) => c[0])].includes(root)
   ) {
     const category = categories.find((c) => c[0] === root);
-    if (search.genre) {
-      let items;
-      try {
-        items = (await animeCatalog({ genre: search.genre })).items;
-      } catch {}
-      content = (
-        <>
-          <PageHeading
-            title={search.genre}
-            subtitle="Jelajahi berdasarkan genre · AniList"
-          />
-          {items ? (
-            <div className="catalog-grid">
-              {items.map((i) => (
-                <Poster item={i} key={i.id} />
-              ))}
-            </div>
-          ) : (
-            <p className="notice">
-              Genre tidak tersedia atau penyedia sedang mengalami gangguan.
-            </p>
-          )}
-        </>
-      );
-    } else
-      content = (
-        <>
-          <PageHeading
-            title={
-              root === "search"
-                ? "Temukan Ceritamu"
-                : category?.[1] || "Semesta Tanpa Batas"
-            }
-            subtitle="Anime, donghua, drama, dan film. Petualangan berikutnya ada di sini."
-          />
-          <SearchCatalog
-            initialQuery={search.q}
-            initialCategory={category?.[0] || "anime"}
-          />
-        </>
-      );
+    const categoryId = category?.[0] || "anime";
+    const q = search.q?.slice(0, 100) || "";
+    const genre = search.genre?.slice(0, 40) || "";
+    let initialResult;
+    try {
+      initialResult = ["anime", "donghua"].includes(categoryId)
+        ? await animeCatalog({
+            q,
+            genre,
+            country: categoryId === "donghua" ? "CN" : undefined,
+          })
+        : await movieCatalog({ q, category: categoryId });
+    } catch {
+      /* Client retry and provider error state remain available. */
+    }
+    content = (
+      <>
+        <PageHeading
+          title={
+            root === "search"
+              ? "Temukan Ceritamu"
+              : category?.[1] || "Semesta Tanpa Batas"
+          }
+          subtitle="Anime, donghua, drama, dan film. Petualangan berikutnya ada di sini."
+        />
+        <SearchCatalog
+          key={`${categoryId}:${q}:${genre}`}
+          initialQuery={q}
+          initialGenre={genre}
+          initialCategory={categoryId}
+          initialResult={initialResult}
+        />
+      </>
+    );
   } else notFound();
   return (
     <div className="page">

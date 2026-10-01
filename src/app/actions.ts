@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db, currentUser } from "@/lib/supabase/server";
 import { profileInput, commentInput } from "@/lib/domain";
 import { z } from "zod";
+import { appOrigin, authErrorMessage } from "@/lib/auth-config";
 const value = (f: FormData, k: string) => String(f.get(k) || "");
 async function context() {
   const user = await currentUser();
@@ -27,13 +28,13 @@ export async function authenticate(f: FormData) {
       "Email atau kata sandi tidak valid (minimal 8 karakter).",
     );
   const s = await db();
-  const { error } =
+  const { data, error } =
     mode === "register"
       ? await s.auth.signUp({
           ...parsed.data,
           email: parsed.data.email,
           options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+            emailRedirectTo: `${appOrigin()}/auth/callback`,
           },
         })
       : await s.auth.signInWithPassword(parsed.data);
@@ -41,10 +42,21 @@ export async function authenticate(f: FormData) {
     finish(
       `/${mode === "register" ? "register" : "login"}`,
       mode === "register"
-        ? "Pendaftaran gagal. Periksa email dan coba kembali."
+        ? authErrorMessage(error.code)
         : "Email atau kata sandi salah, atau email belum diverifikasi.",
     );
-  redirect(mode === "register" ? "/verify-email" : "/");
+  redirect(mode === "register" && !data.session ? "/verify-email" : "/");
+}
+export async function resendVerification(f: FormData) {
+  const email = z.email().safeParse(value(f, "email"));
+  if (!email.success) finish("/verify-email", "Email tidak valid.");
+  const s = await db();
+  const { error } = await s.auth.resend({
+    type: "signup",
+    email: email.data,
+    options: { emailRedirectTo: `${appOrigin()}/auth/callback` },
+  });
+  finish("/verify-email", error ? authErrorMessage(error.code) : null);
 }
 export async function logout() {
   const s = await db();
@@ -55,10 +67,10 @@ export async function forgotPassword(f: FormData) {
   const email = z.email().safeParse(value(f, "email"));
   if (!email.success) finish("/forgot-password", "Email tidak valid.");
   const s = await db();
-  await s.auth.resetPasswordForEmail(email.data, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+  const { error } = await s.auth.resetPasswordForEmail(email.data, {
+    redirectTo: `${appOrigin()}/auth/callback?next=/reset-password`,
   });
-  finish("/forgot-password");
+  finish("/forgot-password", error ? authErrorMessage(error.code) : null);
 }
 export async function resetPassword(f: FormData) {
   const { s } = await context();

@@ -21,6 +21,7 @@ import {
 } from "@/app/actions";
 import { EmptyState } from "./catalog-ui";
 import { VideoPlayer } from "./player";
+import type { CatalogTitle } from "@/lib/domain";
 export async function TitlePage({
   slug,
   season,
@@ -28,7 +29,7 @@ export async function TitlePage({
   slug: string;
   season?: string;
 }) {
-  let item;
+  let item: CatalogTitle | null | undefined;
   let failure = "";
   try {
     item = await titleDetail(slug);
@@ -161,7 +162,10 @@ export async function TitlePage({
                   </span>
                   <span>
                     <b>{e.title}</b>
-                    <small>{e.duration} detik · Video uji orisinal</small>
+                    <small>
+                      {Math.ceil(e.duration / 60)} menit · Periksa ketersediaan
+                      pemutaran
+                    </small>
                   </span>
                   <Play size={20} />
                 </Link>
@@ -174,10 +178,32 @@ export async function TitlePage({
                 {item.episodes
                   ? `${item.episodes} episode tercatat di penyedia metadata. `
                   : ""}
-                ZetaHub belum memiliki sumber pemutaran untuk judul ini.
-                Ketersediaan metadata tidak menjamin hak tayang.
+                Episode lengkap belum tersedia untuk diputar di ZetaHub. Simpan
+                judul ini atau buka penyedia yang tercantum di bawah.
               </p>
             </div>
+          )}
+          {!!item.streamingLinks?.length && (
+            <section className="panel">
+              <h3>Tonton melalui penyedia</h3>
+              <p className="muted">
+                Tautan dari AniList. Ketersediaan wilayah dan langganan
+                mengikuti ketentuan masing-masing penyedia.
+              </p>
+              <div className="filter-row">
+                {item.streamingLinks.map((provider) => (
+                  <a
+                    key={provider.url}
+                    href={provider.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="button outline"
+                  >
+                    Buka {provider.site} <ArrowRight size={15} />
+                  </a>
+                ))}
+              </div>
+            </section>
           )}
           {item.url && (
             <a
