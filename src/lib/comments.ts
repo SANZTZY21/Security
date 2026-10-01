@@ -4,7 +4,7 @@ export function commentReturnPath(value: string): string {
   if (value.length > 400 || /[\\\x00-\x20\x7f]/.test(value))
     return "/community";
   if (
-    /^\/title\/[a-z0-9-]+$/.test(value) ||
+    /^\/(?:title|streaming)\/[a-z0-9-]+$/.test(value) ||
     /^\/watch\/[a-f0-9-]{36}$/.test(value)
   )
     return value;

@@ -1,3 +1,4 @@
+import { OfficialStreamCards } from "./official-streams";
 import Link from "next/link";
 import { Play } from "lucide-react";
 import { db, configured, currentUser } from "@/lib/supabase/server";
@@ -34,6 +35,7 @@ export async function WatchablePage({ page = 1 }: { page?: number }) {
           ketersediaan terpisah.
         </p>
       </div>
+      {page === 1 && <OfficialStreamCards />}
       {page === 1 && (
         <article className="panel">
           <span className="eyebrow">

@@ -1,3 +1,7 @@
+import {
+  OfficialStreamCards,
+  OfficialStreamPage,
+} from "@/components/official-streams";
 import { WatchablePage, OpenCinemaPage } from "@/components/watchable";
 import { notFound, redirect } from "next/navigation";
 import { Home } from "@/components/home";
@@ -80,6 +84,8 @@ export default async function Page({
         page={Math.min(100, Math.max(1, Math.floor(Number(search.page) || 1)))}
       />
     );
+  else if (root === "streaming" && path.length === 2)
+    content = <OfficialStreamPage id={path[1]} video={search.video} />;
   else if (root === "open-cinema" && path.length === 1)
     content = <OpenCinemaPage />;
   else if (root === "watch" && path[1]) content = <WatchPage id={path[1]} />;
@@ -144,6 +150,11 @@ export default async function Page({
           }
           subtitle="Anime, donghua, drama, dan film. Petualangan berikutnya ada di sini."
         />
+        {root !== "search" && (
+          <OfficialStreamCards
+            category={root === "explore" ? undefined : categoryId}
+          />
+        )}
         <SearchCatalog
           key={`${categoryId}:${q}:${genre}`}
           initialQuery={q}

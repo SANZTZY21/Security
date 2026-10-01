@@ -1,3 +1,4 @@
+import { streamForCatalog } from "@/lib/official-streams";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -70,6 +71,7 @@ export async function TitlePage({
       );
     notFound();
   }
+  const officialStream = streamForCatalog(slug);
   const user = await currentUser();
   const { data: episodes } = s
     ? await s
@@ -136,6 +138,13 @@ export async function TitlePage({
               <Link href={`/watch/${firstPlayable.id}`} className="button lime">
                 <Play size={17} /> Tonton Sekarang
               </Link>
+            ) : officialStream ? (
+              <Link
+                href={`/streaming/${officialStream.id}`}
+                className="button lime"
+              >
+                <Play size={17} /> Buka player di ZetaHub
+              </Link>
             ) : (
               <span className="availability">Sumber tayang belum tersedia</span>
             )}
@@ -161,6 +170,18 @@ export async function TitlePage({
           <h2>Sinopsis</h2>
           <p className="synopsis">{item.description}</p>
           <h2>{season ? `Season ${season}` : "Episode tersedia"}</h2>
+          {officialStream && (
+            <div className="panel">
+              <h3>{officialStream.channel}</h3>
+              <p>{officialStream.coverage}</p>
+              <Link
+                href={`/streaming/${officialStream.id}`}
+                className="button outline"
+              >
+                Player & pilihan video
+              </Link>
+            </div>
+          )}
           {episodes?.length ? (
             <div className="episode-list">
               {episodes.map((e) => (
@@ -188,7 +209,9 @@ export async function TitlePage({
                 {item.episodes
                   ? `${item.episodes} episode tercatat di penyedia metadata. `
                   : ""}
-                Episode belum terhubung ke sumber video di ZetaHub.
+                {officialStream
+                  ? "Gunakan player kanal resmi di atas untuk unggahan yang telah ditemukan."
+                  : "Episode belum terhubung ke sumber video di ZetaHub."}
               </p>
             </div>
           )}

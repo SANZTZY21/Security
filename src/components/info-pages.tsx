@@ -18,7 +18,7 @@ const documents: Record<string, { title: string; paragraphs: string[] }> = {
       "ZetaHub menyimpan profil, daftar tontonan, progres video, komentar, preferensi notifikasi, dan catatan transaksi yang diperlukan untuk menjalankan layanan. Kata sandi dikelola oleh Supabase Auth. Kami tidak menyimpan nomor kartu pembayaran.",
       "Profil bersifat privat secara default. Anda dapat mengaktifkan visibilitas publik di Pengaturan → Privasi. Komentar yang Anda kirim bersifat publik. Jangan sertakan informasi pribadi dalam komentar.",
       "Permintaan penghapusan akun dan data dapat diajukan melalui pusat laporan. Riwayat transaksi serta audit tertentu mungkin perlu dipertahankan sesuai kewajiban operasional. Kebijakan retensi dan identitas badan pengelola harus ditetapkan sebelum peluncuran komersial.",
-      "Pencarian dikirim ke penyedia metadata sesuai kategori. Tidak ada pelacak iklan pihak ketiga yang diaktifkan pada konfigurasi awal.",
+      "Pencarian dikirim ke penyedia metadata sesuai kategori. Player YouTube baru dimuat setelah Anda menekan tombol muat player. YouTube menerima data koneksi dan dapat menggunakan cookie, menampilkan iklan, serta menerapkan kebijakan privasinya. ZetaHub tidak mengambil file video atau subtitle dari YouTube.",
     ],
   },
   terms: {

@@ -66,3 +66,6 @@ Local browser regression: with disposable local Supabase and registered Preview 
 
 ### Episode subtitles
 Apply migration12 before using `/admin/subtitles`. An administrator with catalog permission can save JSON containing `id`, `episode_id`, `language` (`id` for Indonesian), `label`, `url` (HTTPS WebVTT), `license`, and `enabled`, together with an audit reason. Serve subtitles with `text/vtt` and proper CORS; both video and text-track hosts must support anonymous CORS when tracks are enabled. A title is playable only when a usable source exists; metadata episode counts never create media files.
+
+### Official embedded uploads
+The six curated `/streaming/` pages need no new environment variables or migrations. Preserve the Content-Security-Policy frame/script origins and `Referrer-Policy: strict-origin-when-cross-origin`; YouTube error153 indicates missing client identity/referrer. Do not proxy YouTube video traffic or change browser geography to bypass provider restrictions. Error150 may reflect embedding/region/account/bot-verification restrictions; retain the provider's message. Keys/consumer login credentials are never collected by ZetaHub for these embeds. Source metadata validation runs server-side; actual playback must also be accepted by YouTube for the viewer.
