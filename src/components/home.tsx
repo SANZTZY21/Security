@@ -148,15 +148,10 @@ export async function Home() {
                 </Link>
               ))
             ) : (
-              <Link className="continue-card" href="/title/zeta-orbit">
-                <img src="/placeholder.svg" alt="" />
-                <div>
-                  <span className="eyebrow">ZETA ORIGINAL · CC0</span>
-                  <h3>Kenali semesta Zeta Orbit</h3>
-                  <p>Film uji orisinal, tersedia untuk diputar.</p>
-                </div>
-                <Play size={22} />
-              </Link>
+              <EmptyState
+                title="Belum ada tontonan untuk dilanjutkan"
+                message="Episode yang kamu tonton akan tersimpan di sini. Jelajahi katalog untuk melihat ketersediaan judul."
+              />
             )}
           </div>
         </HomeSection>

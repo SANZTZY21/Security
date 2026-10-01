@@ -13,11 +13,13 @@ const mocks = vi.hoisted(() => ({
     signInWithOAuth: vi.fn(),
   },
   google: vi.fn(),
+  ready: vi.fn(),
 }));
 vi.mock("@/lib/supabase/server", () => ({
   db: async () => ({ auth: mocks.auth }),
   configured: () => true,
   currentUser: vi.fn(),
+  accountStoreReady: mocks.ready,
 }));
 vi.mock("@/lib/auth-providers", () => ({ googleAvailable: mocks.google }));
 vi.mock("next/navigation", () => ({
@@ -36,6 +38,7 @@ import {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.ready.mockResolvedValue(true);
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
   vi.stubEnv("RENDER_EXTERNAL_URL", "https://zetahub.onrender.com");
 });
@@ -140,6 +143,13 @@ function form(mode = "register") {
   return f;
 }
 describe("email flows", () => {
+  it("does not create accounts or send verification mail before database installation", async () => {
+    mocks.ready.mockResolvedValue(false);
+    await expect(authenticate(form())).rejects.toThrow(
+      "redirect:/register?error=",
+    );
+    expect(mocks.auth.signUp).not.toHaveBeenCalled();
+  });
   it("sends signup to the public callback and shows verification only when needed", async () => {
     mocks.auth.signUp.mockResolvedValue({
       data: { session: null },

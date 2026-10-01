@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { db, currentUser } from "@/lib/supabase/server";
+import { db, currentUser, accountStoreReady } from "@/lib/supabase/server";
 import { profileInput, commentInput } from "@/lib/domain";
 import { z } from "zod";
 import { appOrigin, authErrorMessage } from "@/lib/auth-config";
@@ -26,6 +26,11 @@ export async function authenticate(f: FormData) {
     finish(
       `/${mode === "register" ? "register" : "login"}`,
       "Email atau kata sandi tidak valid (minimal 8 karakter).",
+    );
+  if (mode === "register" && !(await accountStoreReady()))
+    finish(
+      "/register",
+      "Layanan akun belum siap. Pengelola perlu menyelesaikan instalasi database.",
     );
   const s = await db();
   const { data, error } =

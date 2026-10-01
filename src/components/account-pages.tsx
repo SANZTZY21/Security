@@ -583,7 +583,7 @@ export async function AccountPage({ path }: { path: string[] }) {
             </form>
           </>
         ) : (
-          <EmptyState title="Belum ada riwayat" href="/title/zeta-orbit" />
+          <EmptyState title="Belum ada riwayat" href="/explore" />
         )}
       </>
     );

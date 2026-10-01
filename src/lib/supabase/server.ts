@@ -47,3 +47,14 @@ export async function currentUser() {
   } = await s.auth.getUser();
   return user;
 }
+
+export async function accountStoreReady() {
+  if (!configured()) return false;
+  try {
+    const s = await db();
+    const { error } = await s.from("profiles").select("id").limit(0);
+    return !error;
+  } catch {
+    return false;
+  }
+}
