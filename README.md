@@ -4,6 +4,12 @@
 
 This repository previously contained unrelated files (`InVisbleSecurity`, `Key`, `Security`, `config.json`); those are preserved and not used by the web application.
 
+## Deploy ke Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/SANZTZY21/Security/tree/coderabbit/build-zetahub-streaming-platform/decff00e)
+
+Siapkan Supabase cloud terlebih dahulu, terapkan migrasi dan `supabase/bootstrap.sql`, lalu isi environment variable di Render. Ikuti [panduan Render langkah demi langkah](docs/RENDER.md). Jangan gunakan kredensial Supabase lokal dari Preview untuk deploy cloud.
+
 ## Run locally
 
 Requires Node 24, npm, and a working Docker daemon. Dependencies are locked in `package-lock.json`.

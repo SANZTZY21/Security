@@ -1,5 +1,7 @@
 # Deployment and operations
 
+For Render, follow [the dedicated deployment guide](RENDER.md), including the Blueprint and hosted Supabase initialization.
+
 ## Prerequisites
 
 Node 24, npm lockfile installation, a Supabase project, HTTPS application hosting and a canonical origin. Production provider integrations require the credentials and licenses listed in INTEGRATIONS.md. The local task stack is not a production deployment.

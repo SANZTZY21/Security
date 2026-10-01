@@ -1,0 +1,33 @@
+# Deploy the application on Render and keep Auth/PostgreSQL/Storage on Supabase.
+# Enter credentials in the Render dashboard; never copy .env.local from the sandbox.
+services:
+  - type: web
+    name: zetahub
+    runtime: node
+    branch: coderabbit/build-zetahub-streaming-platform/decff00e
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANILIST_API_URL
+        value: https://graphql.anilist.co
+      - key: PAYMENT_PROVIDER
+        value: midtrans
+      - key: MIDTRANS_PRODUCTION
+        value: "false"
+      - key: CRON_SECRET
+        generateValue: true
