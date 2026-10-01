@@ -1,0 +1,170 @@
+import { notFound, redirect } from "next/navigation";
+import { Home } from "@/components/home";
+import { SearchCatalog } from "@/components/search";
+import {
+  AuthPage,
+  PremiumPage,
+  AccountPage,
+  PageHeading,
+} from "@/components/account-pages";
+import {
+  TitlePage,
+  CommunityPage,
+  WatchPage,
+} from "@/components/content-pages";
+import { InfoPage, Leaderboard, PublicProfile } from "@/components/info-pages";
+import { AdminPage } from "@/components/admin-pages";
+import { GenreTiles, Poster } from "@/components/catalog-ui";
+import { currentUser } from "@/lib/supabase/server";
+import { categories } from "@/lib/domain";
+import { animeCatalog } from "@/lib/catalog";
+export const dynamic = "force-dynamic";
+const privatePages = new Set([
+  "settings",
+  "avatar-editor",
+  "watchlist",
+  "history",
+  "following",
+  "notifications",
+  "my-level",
+  "my-titles",
+  "subscription",
+  "payment-history",
+  "admin",
+  "staff",
+  "reset-password",
+]);
+const authPages = new Set([
+  "login",
+  "register",
+  "verify-email",
+  "forgot-password",
+  "reset-password",
+]);
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ path?: string[] }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const { path = [] } = await params;
+  const search = await searchParams;
+  const root = path[0];
+  if (!root) return <Home />;
+  if (privatePages.has(root) && !(await currentUser())) redirect("/login");
+  let content;
+  if (authPages.has(root) && path.length === 1)
+    content = <AuthPage mode={root} />;
+  else if (root === "premium" && path.length === 1) content = <PremiumPage />;
+  else if (["admin", "staff"].includes(root))
+    content = (
+      <AdminPage
+        path={path}
+        page={Math.min(100, Math.max(1, Number(search.page) || 1))}
+        q={search.q?.slice(0, 50)}
+      />
+    );
+  else if (privatePages.has(root)) content = <AccountPage path={path} />;
+  else if (root === "title" && path[1])
+    content = (
+      <TitlePage
+        slug={path[1]}
+        season={path[2] === "season" ? path[3] : undefined}
+      />
+    );
+  else if (root === "watch" && path[1]) content = <WatchPage id={path[1]} />;
+  else if (root === "community")
+    content = (
+      <CommunityPage
+        target={path[1] ? `comment:${path[1]}` : search.target || "community"}
+      />
+    );
+  else if (root === "leaderboard")
+    content = <Leaderboard period={search.period} />;
+  else if (root === "profile" && path[1])
+    content = <PublicProfile username={path[1]} />;
+  else if (
+    [
+      "about",
+      "contact",
+      "help",
+      "privacy",
+      "terms",
+      "copyright",
+      "content-report",
+    ].includes(root)
+  )
+    content = <InfoPage id={root} target={search.target} />;
+  else if (root === "genres")
+    content = (
+      <>
+        <PageHeading
+          title="Pilih Duniamu"
+          subtitle="Dari petualangan epik hingga cerita yang terasa dekat."
+        />
+        <GenreTiles />
+      </>
+    );
+  else if (
+    ["explore", "search", ...categories.map((c) => c[0])].includes(root)
+  ) {
+    const category = categories.find((c) => c[0] === root);
+    if (search.genre) {
+      let items;
+      try {
+        items = (await animeCatalog({ genre: search.genre })).items;
+      } catch {}
+      content = (
+        <>
+          <PageHeading
+            title={search.genre}
+            subtitle="Jelajahi berdasarkan genre · AniList"
+          />
+          {items ? (
+            <div className="catalog-grid">
+              {items.map((i) => (
+                <Poster item={i} key={i.id} />
+              ))}
+            </div>
+          ) : (
+            <p className="notice">
+              Genre tidak tersedia atau penyedia sedang mengalami gangguan.
+            </p>
+          )}
+        </>
+      );
+    } else
+      content = (
+        <>
+          <PageHeading
+            title={
+              root === "search"
+                ? "Temukan Ceritamu"
+                : category?.[1] || "Semesta Tanpa Batas"
+            }
+            subtitle="Anime, donghua, drama, dan film. Petualangan berikutnya ada di sini."
+          />
+          <SearchCatalog
+            initialQuery={search.q}
+            initialCategory={category?.[0] || "anime"}
+          />
+        </>
+      );
+  } else notFound();
+  return (
+    <div className="page">
+      {search.error && (
+        <div className="notice error" role="alert">
+          {search.error.slice(0, 350)}
+        </div>
+      )}
+      {search.success && (
+        <div className="notice success" role="status">
+          Permintaan berhasil diproses.
+        </div>
+      )}
+      {content}
+    </div>
+  );
+}
